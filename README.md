@@ -88,11 +88,11 @@ Oh yeah, bitbucket currently (2014-07-25) shows html entities as strings. Enjoy 
 
 #### options.header
 Type: `String`
-Default value: "**Table of Contents**"
+Default value: `"**Table of Contents**"`
 
 You can change the header with this. The doctoc script hardcoded prints out this default header, so this is the option
 to swap that line. Oh yeah, the plugin just does str-replace of the first hit, so I recommend keeping your toc on top 
-of the file, or not using the exact string "**Table of Contents**" in your md.     
+of the file, or not using the exact string `"**Table of Contents**"` in your md.     
 
 #### options.bitbucket
 Type: `Boolean`
