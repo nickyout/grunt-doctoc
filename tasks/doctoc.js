@@ -1,6 +1,6 @@
 module.exports = function(grunt) {
 	var child_process = require("child_process"),
-	    path = require("path");
+		path = require("path");
 	// Do grunt-related things in here
 	grunt.registerMultiTask("doctoc", function() {
 		var options = this.options({
