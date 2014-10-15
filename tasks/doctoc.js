@@ -17,7 +17,7 @@ module.exports = function(grunt) {
 			args.push("--bitbucket");
 		}
 		if (grunt.file.exists(filePath)) {
-		grunt.util.spawn({ cmd: "nodejs", args: args }, function(error, result, code) {
+		grunt.util.spawn({ cmd: process.execPath, args: args }, function(error, result, code) {
 
 			if (!error) {
 			
