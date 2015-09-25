@@ -39,7 +39,7 @@ module.exports = function( grunt ) {
 					grunt.log.warn( "Excluded Directories: " + excludedDirs );
 
 					// format regex
-					excludedDirs = excludedDirs.join("|");
+					excludedDirs = excludedDirs.join( "|" );
 					excludedDirs = new RegExp( excludedDirs, "gi" );
 				} else {
 					// set this to a string, so we don't break our regex pattern
