@@ -9,42 +9,57 @@ module.exports = function( grunt ) {
 				target: "./README.md",
 				removeAd: true,
 				header: "**Table of Contents**",
-				recursiveDir: "./",
-				relHeader: ""
+				recursive: false,
+				excludedDirs: [],
+				recursiveDirRoot: "./",
+				relHeader: "**Nested README Files**"
 			}),
 			done = this.async(),
 			filePath = options.target,
-			themeRoot = options.recursiveDir,
+			recursive = options.recursive,
+			recursiveDirRoot = options.recursiveDirRoot,
+			excludedDirs = options.excludedDirs,
 			relativeLinksHeader = options.relHeader,
 			newLinks = [],
 			args = [path.resolve( __dirname, '..', 'node_modules', 'doctoc', 'doctoc.js' ), filePath];
 
-		if (options.bitbucket) {
-			args.push("--bitbucket");
+		if ( options.bitbucket ) {
+			args.push( "--bitbucket" );
 		}
 
-		if (grunt.file.exists(filePath)) {
+		if ( grunt.file.exists( filePath ) ) {
 
-			if ( themeRoot ) {
+			// if recursive mode is true
+			if ( recursive ) {
 				var dir = require( 'node-dir' );
-				// TODO make excludeDir an options array
-				dir.readFiles( themeRoot, {
+
+				// check if excludedDirs has values (passed as an array in grunt-doctoc options)
+				if ( excludedDirs.length > 0 ) {
+
+					grunt.log.warn( "Excluded Directories: " + excludedDirs );
+
+					// format regex
+					excludedDirs = excludedDirs.join("|");
+					excludedDirs = new RegExp( excludedDirs, "gi" );
+				} else {
+					// set this to a string, so we don't break our regex pattern
+					excludedDirs = "";
+				}
+
+				// node-dir can iterate through file systems and pluck out all files that match README.md
+				// we may want to change `match` to match any `*.md` file
+				dir.readFiles( recursiveDirRoot, {
 						match: /README.md/,
-						excludeDir: /(node_modules|bower_components)/
+						excludeDir: excludedDirs
 					},
 					function( err, content, filename, next ) {
 						if ( err ) {
 							throw err;
 						}
+						// if we have a match, add that filename (path is included) to our array of relative links
 						newLinks.push( filename );
 						next();
-					},
-					function( err, files){
-						if ( err ) {
-							throw err;
-						}
-						grunt.log.writeln( "finished reading files:" + files );
-					} );
+					});
 			}
 
 			grunt.util.spawn( { cmd: process.execPath, args: args }, function( error, result, code ) {
@@ -52,10 +67,10 @@ module.exports = function( grunt ) {
 				if ( ! error ) {
 
 					var fileStr = grunt.file.read( filePath ),
-						strToReplace = "**Table of Contents**" + (options.removeAd ? "  *generated with [DocToc](http://doctoc.herokuapp.com/)*" : ""),
+						strToReplace = "**Table of Contents**" + ( options.removeAd ? "  *generated with [DocToc](http://doctoc.herokuapp.com/)*" : "" ),
 						endStrToc = "<!-- END doctoc generated TOC please keep comment here to allow auto update -->";
 
-					// replace header with header options
+					// replace ToC header with header from options
 					fileStr = fileStr.replace( strToReplace, options.header );
 
 					// build the links for external files
@@ -65,17 +80,18 @@ module.exports = function( grunt ) {
 							newLinks[i] = "- [" + newLinks[i] + "](" + newLinks[i] + ")";
 						}
 
-						// add relative links header if one was present in options
+						// add relative links header to the beginning of our array containing relative links
 						if ( relativeLinksHeader ) {
 							newLinks.unshift( relativeLinksHeader );
 						}
 
-						// append important end of doctoc string to array containing new links
 						// pushing empty value so that the end of the toc is separated by two line returns instead of one
 						newLinks.push( "" );
+
+						// append important "end of doctoc" string to array containing relative links -- this needs to be the last thing that the ToC outputs
 						newLinks.push( endStrToc );
 
-						// array to string
+						// formatting output to return each value on a new line
 						newLinks = newLinks.join( grunt.util.linefeed );
 
 						// replace the end of the doctoc generated output with the new relative links
@@ -86,7 +102,7 @@ module.exports = function( grunt ) {
 					grunt.file.write( filePath, fileStr );
 
 					// success msg
-					grunt.log.writeln( "Added toc to " + filePath );
+					grunt.log.success( "Added toc to " + filePath );
 
 				} else {
 					grunt.fail.fatal( error );
