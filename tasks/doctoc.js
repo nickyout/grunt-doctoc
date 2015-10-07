@@ -12,7 +12,7 @@ module.exports = function( grunt ) {
 				recursive: false,
 				excludedDirs: [],
 				recursiveDirRoot: "./",
-				targetAllMd: false,
+				matchAllMd: false,
 				relHeader: "**Nested README Files**"
 			}),
 			done = this.async(),
@@ -21,7 +21,7 @@ module.exports = function( grunt ) {
 			recursiveDirRoot = options.recursiveDirRoot,
 			excludedDirs = options.excludedDirs,
 			relativeLinksHeader = options.relHeader,
-			targetAllMd = options.targetAllMd,
+			matchAllMd = options.matchAllMd,
 			recursiveMatch = '',
 			newLinks = [],
 			recursivePath = '',
@@ -77,7 +77,7 @@ module.exports = function( grunt ) {
 				}
 
 				// are we targeting all md files?
-				if ( true === targetAllMd ) {
+				if ( true === matchAllMd ) {
 					recursiveMatch = new RegExp( ".*\\.md" );
 				} else {
 					recursiveMatch = new RegExp( "README\\.md", "i" );
