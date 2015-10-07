@@ -54,6 +54,11 @@ grunt.initConfig({
         target: "./README.md",
         removeAd: true,
         header: "## Table of Contents"
+        recursive: false,
+        excludedDirs: [],
+        recursiveDirRoot: "./",
+        matchAllMd: false,
+        relHeader: "**Nested README Files**"
     },
     your_target: {
         // doctoc is a multi task, so create one like this
@@ -87,26 +92,60 @@ Copy the above one if you want.
 Oh yeah, bitbucket currently (2014-07-25) shows html entities as strings. Enjoy the html tags. 
 
 #### options.header
-Type: `String`
-Default value: `"**Table of Contents**"`
+* Type: `String` (markdown)
+* Default value: `"**Table of Contents**"`
 
 You can change the header with this. The doctoc script hardcoded prints out this default header, so this is the option
 to swap that line. Oh yeah, the plugin just does str-replace of the first hit, so I recommend keeping your toc on top 
 of the file, or not using the exact string `"**Table of Contents**"` in your md.     
 
 #### options.bitbucket
-Type: `Boolean`
-Default value: false
+* Type: `Boolean`
+* Default value: `false`
 
 Outputs TOC in bitbucket format. In case you do not want the automatically generated \[TOC\] one, I guess. 
 I swear, they should at least add that feature to the bitbucket markdown demo page.  
 
 #### options.removeAd
-Type: `Boolean`
-Default value: true
+* Type: `Boolean`
+* Default value: `true`
 
 By default, the doctoc script will add a message saying it is generated with DocToc. 
 Screw that. So much free software on github that does without. Set it to false to make it show up again. 
+
+#### options.recursive
+* Type: `Boolean`
+* Default Value: `false`
+
+When set to true, grunt-doctoc will iterate through all of the folders nested within the directory specified in the option, `recursiveDirRoot`. This will return a section of relative links just below the doctoc-generated ToC. Useful for when a repo has doc files in multiple nested directories.
+
+#### options.recursiveDirRoot
+* Type: `String`
+* Default Value: `"./"`
+* Contingency: `options.recursive` must be set to `true`
+
+This is the root directory from which grunt-doctoc will iterate through nested folders looking for doc files.
+
+#### options.excludedDirs
+* Type: `Array`
+* Default Value: `[]`
+* Contingency: `options.recursive` must be set to `true`
+
+An array of directory names that you wish to exclude from from the ToC.
+ 
+#### options.matchAllMd
+* Type: `Boolean`
+* Default Value: `false`
+* Contingency: `options.recursive` must be set to `true`
+
+By default, the recursive iterator will match (and return) all files named `README.md`. To match and return links to all files ending with `.md`, set this to true.   
+
+#### options.relHeader
+* Type: `String` (markdown)
+* Default Value: `"**Nested README Files**"`
+* Contingency: `options.recursive` must be set to `true`
+
+Displayed above the relative links to nested docs.
 
 ### Usage Examples
 
@@ -146,6 +185,56 @@ grunt.initConfig({
       }
     }
   },
+});
+```
+
+##### Recursive Options Usage
+Listing all README.md files in all sub directories of the repo root.
+```js
+grunt.initConfig({
+  doctoc: {
+    options: {
+      target: "./README.md",
+      header: "# Table of Contents",
+      recursive: true,
+      excludedDirs: ["node_modules", "bower_components"],
+      relHeader: "## Relative README links"
+    }
+  }
+});
+```
+--
+
+Listing all README.md files in all sub directories of the repo root while excluding all matches from the directories `/node_modules` AND `/bower_components`.
+
+```js
+grunt.initConfig({
+  doctoc: {
+    options: {
+      target: "./README.md",
+      header: "# Table of Contents",
+      recursive: true,
+      relHeader: "## Relative README links",
+      excludedDirs: ["node_modules", "bower_components"]
+    }
+  }
+});
+```
+--
+
+Listing all `.md` files found recursively from within a specified subdirectory only.
+```js
+grunt.initConfig({
+  doctoc: {
+    options: {
+      target: "./README.md",
+      header: "# Table of Contents",
+      recursive: true,
+      relHeader: "## Relative README links",
+      recursiveDirRoot: "./docs",
+      matchAllMd: true
+    }
+  }
 });
 ```
 
