@@ -21,7 +21,34 @@ module.exports = function( grunt ) {
 			excludedDirs = options.excludedDirs,
 			relativeLinksHeader = options.relHeader,
 			newLinks = [],
+			recursivePath = '',
 			args = [path.resolve( __dirname, '..', 'node_modules', 'doctoc', 'doctoc.js' ), filePath];
+
+		// if repo root is recursive root, we need to prepend just a single slash to the path
+		// otherwise, prepend a formatted recursiveDirRoot to the path
+		if ( './' === recursiveDirRoot ) {
+			recursivePath = '/';
+		} else {
+
+			// not sure this will be an issue, but we might as well account for this situation
+			if ( '../' === recursiveDirRoot.substring( 0, 3 ) ) {
+				grunt.log.warn( "Paths beginning with \"../\" may cause unforeseen issues." );
+				grunt.log.warn( "For best results, this value should begin with either ./ or  no special characters" );
+			}
+
+			// if there is a leading "./" (i.e. if the first two chars in the path are "./"), remove the "."
+			// other wise make just have to mke sure the leading char is a slash
+			if ( './' === recursiveDirRoot.substring( 0, 2 )  ) {
+				recursivePath = recursiveDirRoot.replace( /\./, "" );
+			} else {
+				recursivePath = recursiveDirRoot;
+
+				// if the string doesn't have a leading slash, we need to prepend one.
+				if ( '/' != recursiveDirRoot.substring( 0, 1 ) ) {
+					recursivePath = '/' + recursivePath;
+				}
+			}
+		}
 
 		if ( options.bitbucket ) {
 			args.push( "--bitbucket" );
@@ -46,10 +73,9 @@ module.exports = function( grunt ) {
 					excludedDirs = "";
 				}
 
-				// node-dir can iterate through file systems and pluck out all files that match README.md
-				// we may want to change `match` to match any `*.md` file
+				// Maybe there should be an option to match just "README.md" in recursive mode?
 				dir.readFiles( recursiveDirRoot, {
-						match: /README.md/,
+						match: /.*\.md/,
 						excludeDir: excludedDirs
 					},
 					function( err, content, filename, next ) {
@@ -57,7 +83,7 @@ module.exports = function( grunt ) {
 							throw err;
 						}
 						// if we have a match, add that filename (path is included) to our array of relative links
-						newLinks.push( filename );
+						newLinks.push( recursivePath + filename );
 						next();
 					});
 			}
