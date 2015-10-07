@@ -12,6 +12,7 @@ module.exports = function( grunt ) {
 				recursive: false,
 				excludedDirs: [],
 				recursiveDirRoot: "./",
+				targetAllMd: false,
 				relHeader: "**Nested README Files**"
 			}),
 			done = this.async(),
@@ -20,6 +21,8 @@ module.exports = function( grunt ) {
 			recursiveDirRoot = options.recursiveDirRoot,
 			excludedDirs = options.excludedDirs,
 			relativeLinksHeader = options.relHeader,
+			targetAllMd = options.targetAllMd,
+			recursiveMatch = '',
 			newLinks = [],
 			recursivePath = '',
 			args = [path.resolve( __dirname, '..', 'node_modules', 'doctoc', 'doctoc.js' ), filePath];
@@ -73,9 +76,18 @@ module.exports = function( grunt ) {
 					excludedDirs = "";
 				}
 
-				// Maybe there should be an option to match just "README.md" in recursive mode?
+				// are we targeting all md files?
+				if ( true === targetAllMd ) {
+					recursiveMatch = new RegExp( ".*\\.md" );
+				} else {
+					recursiveMatch = new RegExp( "README\\.md", "i" );
+				}
+				grunt.log.warn( "excluded: " + excludedDirs );
+				grunt.log.warn( "recursive: " + recursiveMatch );
+
+				// node-dir can iterate through file systems and pluck out all files that match README.md
 				dir.readFiles( recursiveDirRoot, {
-						match: /.*\.md/,
+						match: recursiveMatch,
 						excludeDir: excludedDirs
 					},
 					function( err, content, filename, next ) {
