@@ -1,7 +1,8 @@
 var endStrToc = "<!-- END doctoc generated TOC please keep comment here to allow auto update -->",
 	replaceHeader = "**Table of Contents**",
 	replaceHeaderWithAd = "**Table of Contents**  *generated with [DocToc](http://doctoc.herokuapp.com/)*",
-	path = require('path');
+	path = require('path'),
+	mdEscape = /([_*])/g;
 
 /**
  * Description of the options object.
@@ -52,6 +53,7 @@ function runDocToc(grunt, filePath, bitbucket, callback) {
  */
 function appendFileList(grunt, lines, listFiles, listFilesHeader) {
 	var filePaths = grunt.file.expand(listFiles),
+		filePath,
 		i;
 	// add relative links header to the beginning of our array containing relative links
 	if ( listFilesHeader ) {
@@ -62,7 +64,8 @@ function appendFileList(grunt, lines, listFiles, listFilesHeader) {
 	lines.push( "" );
 
 	for ( i = 0; i < filePaths.length; i ++ ) {
-		lines.push("- [" + filePaths[i] + "](" + filePaths[i] + ")");
+		filePath = filePaths[i];
+		lines.push("- [" + filePath.replace(mdEscape, '\\$1') + "](" + filePath + ")");
 	}
 
 	// Yeah, conform to doctoc output, end with empty line
