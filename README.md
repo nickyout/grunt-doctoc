@@ -168,8 +168,8 @@ grunt.initConfig({
       target: "./README.md",
       header: "# Table of Contents",
       listFiles: [
-        "./**/README.md", 
-        "!./**/node_modules/**/README.md", 
+        "./**/README.md",
+        "!./**/node_modules/**/README.md",
         "!./bower_components/**/README.md"
       ],
       listFilesHeader: "## All repository READMEs"
