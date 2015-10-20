@@ -1,157 +1,133 @@
-module.exports = function( grunt ) {
-	var child_process = require( "child_process" ),
-		path = require( "path" );
+var endStrToc = "<!-- END doctoc generated TOC please keep comment here to allow auto update -->",
+	replaceHeader = "**Table of Contents**",
+	replaceHeaderWithAd = "**Table of Contents**  *generated with [DocToc](http://doctoc.herokuapp.com/)*",
+	path = require('path'),
+	mdEscape = /([_*])/g;
 
+/**
+ * Description of the options object.
+ * @typedef {Object} Options
+ * @prop {string} target - path to file to apply doctoc to
+ * @prop {boolean} [bitbucket=false] - tell doctoc to create a bitbucket-style TOC
+ * @prop {boolean} [removeAd=true] - remove the link to the creator of doctoc in the generated TOC header.
+ * @prop {string} [header] - replace the default header with this string.
+ * @prop {string|Array.<string>} [listFiles=null] - append the TOC with this list of files. Resolves globbing patterns.
+ * @prop {string} [listFilesHeader] - replace the default file list header with this string.
+ */
+
+/**
+ * Run the doctoc script.
+ * @param {Grunt} grunt
+ * @param {string} filePath - target file for the doctoc script.
+ * @param {boolean} bitbucket
+ * @param {function(error, result)} callback - node style callback.
+ */
+function runDocToc(grunt, filePath, bitbucket, callback) {
+
+	var doctocScript = path.resolve( __dirname, '..', 'node_modules', 'doctoc', 'doctoc.js' ),
+		command = [doctocScript, filePath];
+
+	if ( bitbucket ) {
+		command.push( "--bitbucket" );
+	}
+
+	if ( grunt.file.exists( filePath ) ) {
+		grunt.util.spawn({
+			cmd: process.execPath,
+			args: command
+		}, callback);
+	} else {
+		callback(new Error("Could not apply doctoc: target " + filePath + " does not exist"), null);
+	}
+}
+
+/**
+ * Resolves a globbing pattern/array of patterns;
+ * Creates an md-style list of links out of the files;
+ * Appends the resulting text as separate lines to the argument `lines`
+ * @param {Grunt} grunt
+ * @param {Array.<string>} lines
+ * @param {string|Array.<string>} listFiles - globbing pattern fed to grunt.file.expand
+ * @param listFilesHeader - header.
+ * @returns {Array.<string>}
+ */
+function appendFileList(grunt, lines, listFiles, listFilesHeader) {
+	var filePaths = grunt.file.expand(listFiles),
+		filePath,
+		i;
+	// add relative links header to the beginning of our array containing relative links
+	if ( listFilesHeader ) {
+		lines.push( listFilesHeader );
+	}
+
+	// Proper md needs a white line between and after a list
+	lines.push( "" );
+
+	for ( i = 0; i < filePaths.length; i ++ ) {
+		filePath = filePaths[i];
+		lines.push("- [" + filePath.replace(mdEscape, '\\$1') + "](" + filePath + ")");
+	}
+
+	// Yeah, conform to doctoc output, end with empty line
+	lines.push( "" );
+
+	return lines;
+}
+
+/**
+ * Performs all kinds of magic adjustments to the target file after it has been digested by the doctoc script.
+ * @param {Grunt} grunt
+ * @param {Options} options
+ */
+function adjustTOCFile(grunt, options) {
+	var targetFile = options.target,
+		fileContent = grunt.file.read( targetFile ),
+		replacer = options.removeAd ? replaceHeaderWithAd : replaceHeader,
+		linesToAppend;
+
+	// replace ToC header with header from options
+	fileContent = fileContent.replace( replacer, options.header );
+
+	// build the links for external files
+	if ( options.listFiles ) {
+		linesToAppend = [];
+
+		appendFileList(grunt, linesToAppend, options.listFiles, options.listFilesHeader);
+
+		// append important "end of doctoc" string to array containing relative links -- this needs to be the last thing that the ToC outputs
+		linesToAppend.push( endStrToc );
+
+		// replace the end of the doctoc generated output with the new relative links
+		fileContent = fileContent.replace( endStrToc, linesToAppend.join( grunt.util.linefeed ) );
+	}
+
+	// write the file
+	grunt.file.write( targetFile, fileContent );
+
+	// success msg
+	grunt.log.success( "Added toc to " + targetFile );
+}
+
+module.exports = function( grunt ) {
 	// Do grunt-related things in here
 	grunt.registerMultiTask( "doctoc", function() {
-		var options = this.options( {
+		var options = this.options({
 				bitbucket: false,
 				target: "./README.md",
 				removeAd: true,
 				header: "**Table of Contents**",
-				recursive: false,
-				excludedDirs: [],
-				recursiveDirRoot: "./",
-				matchAllMd: false,
-				relHeader: "**Nested README Files**"
+				listFiles: null,
+				listFilesHeader: "**Nested README Files**"
 			}),
-			done = this.async(),
-			filePath = options.target,
-			recursive = options.recursive,
-			recursiveDirRoot = options.recursiveDirRoot,
-			excludedDirs = options.excludedDirs,
-			relativeLinksHeader = options.relHeader,
-			matchAllMd = options.matchAllMd,
-			recursiveMatch = '',
-			newLinks = [],
-			recursivePath = '',
-			args = [path.resolve( __dirname, '..', 'node_modules', 'doctoc', 'doctoc.js' ), filePath];
+			done = this.async();
 
-		// if repo root is recursive root, we need to prepend just a single slash to the path
-		// otherwise, prepend a formatted recursiveDirRoot to the path
-		if ( './' === recursiveDirRoot ) {
-			recursivePath = '/';
-		} else {
-
-			// not sure this will be an issue, but we might as well account for this situation
-			if ( '../' === recursiveDirRoot.substring( 0, 3 ) ) {
-				grunt.log.warn( "Paths beginning with \"../\" may cause unforeseen issues." );
-				grunt.log.warn( "For best results, this value should begin with either ./ or  no special characters" );
-			}
-
-			// if there is a leading "./" (i.e. if the first two chars in the path are "./"), remove the "."
-			// other wise make just have to mke sure the leading char is a slash
-			if ( './' === recursiveDirRoot.substring( 0, 2 )  ) {
-				recursivePath = recursiveDirRoot.replace( /\./, "" );
+		runDocToc(grunt, options.target, options.bitbucket, function (error, result) {
+			if (!error) {
+				adjustTOCFile(grunt, options);
 			} else {
-				recursivePath = recursiveDirRoot;
-
-				// if the string doesn't have a leading slash, we need to prepend one.
-				if ( '/' != recursiveDirRoot.substring( 0, 1 ) ) {
-					recursivePath = '/' + recursivePath;
-				}
+				grunt.fail.fatal(error);
 			}
-		}
-
-		if ( options.bitbucket ) {
-			args.push( "--bitbucket" );
-		}
-
-		if ( grunt.file.exists( filePath ) ) {
-
-			// if recursive mode is true
-			if ( recursive ) {
-				var dir = require( 'node-dir' );
-
-				// check if excludedDirs has values (passed as an array in grunt-doctoc options)
-				if ( excludedDirs.length > 0 ) {
-
-					grunt.log.warn( "Excluded Directories: " + excludedDirs );
-
-					// format regex
-					excludedDirs = excludedDirs.join( "|" );
-					excludedDirs = new RegExp( excludedDirs, "gi" );
-				} else {
-					// set this to a string, so we don't break our regex pattern
-					excludedDirs = "";
-				}
-
-				// are we targeting all md files?
-				if ( true === matchAllMd ) {
-					recursiveMatch = new RegExp( ".*\\.md" );
-				} else {
-					recursiveMatch = new RegExp( "README\\.md", "i" );
-				}
-				grunt.log.warn( "excluded: " + excludedDirs );
-				grunt.log.warn( "recursive: " + recursiveMatch );
-
-				// node-dir can iterate through file systems and pluck out all files that match README.md
-				dir.readFiles( recursiveDirRoot, {
-						match: recursiveMatch,
-						excludeDir: excludedDirs
-					},
-					function( err, content, filename, next ) {
-						if ( err ) {
-							throw err;
-						}
-						// if we have a match, add that filename (path is included) to our array of relative links
-						newLinks.push( recursivePath + filename );
-						next();
-					});
-			}
-
-			grunt.util.spawn( { cmd: process.execPath, args: args }, function( error, result, code ) {
-
-				if ( ! error ) {
-
-					var fileStr = grunt.file.read( filePath ),
-						strToReplace = "**Table of Contents**" + ( options.removeAd ? "  *generated with [DocToc](http://doctoc.herokuapp.com/)*" : "" ),
-						endStrToc = "<!-- END doctoc generated TOC please keep comment here to allow auto update -->";
-
-					// replace ToC header with header from options
-					fileStr = fileStr.replace( strToReplace, options.header );
-
-					// build the links for external files
-					var linksCount = newLinks.length;
-					if ( linksCount > 0 ) {
-						for ( var i = 0; i < linksCount; i ++ ) {
-							newLinks[i] = "- [" + newLinks[i] + "](" + newLinks[i] + ")";
-						}
-
-						// add relative links header to the beginning of our array containing relative links
-						if ( relativeLinksHeader ) {
-							newLinks.unshift( relativeLinksHeader );
-						}
-
-						// pushing empty value so that the end of the toc is separated by two line returns instead of one
-						newLinks.push( "" );
-
-						// append important "end of doctoc" string to array containing relative links -- this needs to be the last thing that the ToC outputs
-						newLinks.push( endStrToc );
-
-						// formatting output to return each value on a new line
-						newLinks = newLinks.join( grunt.util.linefeed );
-
-						// replace the end of the doctoc generated output with the new relative links
-						fileStr = fileStr.replace( endStrToc, newLinks );
-					}
-
-					// write the files
-					grunt.file.write( filePath, fileStr );
-
-					// success msg
-					grunt.log.success( "Added toc to " + filePath );
-
-				} else {
-					grunt.fail.fatal( error );
-					grunt.log.error( "Failed to apply toc to " + filePath );
-				}
-				done();
-			} );
-		} else {
-			grunt.fail.warn( "Target " + filePath + " does not exist" );
 			done();
-		}
-	} );
-
+		});
+	});
 };
