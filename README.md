@@ -57,7 +57,7 @@ grunt.initConfig({
         target: "./README.md",
         removeAd: true,
         header: "**Table of Contents**"
-	listFiles: null,
+	    listFiles: null,
         listFilesHeader: "**Nested README Files**"
     },
     your_target: {
@@ -159,7 +159,7 @@ grunt.initConfig({
   }
 });
 ```
-Listing all README.md files in all sub directories of the repo root while excluding all matches from the directories `/node_modules` AND `/bower_components`.
+Listing all README.md files in all sub directories of the repo root while excluding all matches from the directories `/node_modules` AND `/bower_components`. _Note: when excluding paths (with `!`), you need to be sure to match everything included by the globbing pattern(s) **preceeding** the exclusion pattern(s)._
 
 ```js
 grunt.initConfig({
@@ -169,8 +169,8 @@ grunt.initConfig({
       header: "# Table of Contents",
       listFiles: [
         "./**/README.md", 
-        "!**/node_modules", 
-        "!bower_components"
+        "!./**/node_modules/**/README.md", 
+        "!./bower_components/**/README.md"
       ],
       listFilesHeader: "## All repository READMEs"
     }
