@@ -53,12 +53,12 @@ In your project's Gruntfile, add a section named `doctoc` to the data object pas
 grunt.initConfig({
   doctoc: {
     options: {
-        bitbucket: false,
-        target: "./README.md",
-        removeAd: true,
-        header: "**Table of Contents**"
-	    listFiles: null,
-        listFilesHeader: "**Nested README Files**"
+      bitbucket: false,
+      target: "./README.md",
+      removeAd: true,
+      header: "**Table of Contents**"
+      listFiles: null,
+      listFilesHeader: "**Nested README Files**"
     },
     your_target: {
         // doctoc is a multi task, so create an object like this
