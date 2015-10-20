@@ -39,7 +39,6 @@
     "gruntplugin"
   ],
   "dependencies": {
-    "node-dir": "0.1.10",
     "doctoc": "0.7.1"
   }
 }
