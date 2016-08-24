@@ -24,7 +24,7 @@
     "node": ">= 0.8.0"
   },
   "scripts": {
-    "test": "echo \"Unit tests are for pussies.\""
+    "test": "echo \"There are currently no unit tests. Please contribute.\""
   },
   "devDependencies": {
     "grunt-contrib-jshint": "^0.9.2",
